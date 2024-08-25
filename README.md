@@ -12,4 +12,4 @@ In case your system doesn't allow downloading exe files :
 1. Go to Releases
 2. Click on `Source_code.zip` to download it
 3. Extract the zip file
-4. Run `jungleWarrior.zip`
+4. Run `jungleWarrior.exe`
