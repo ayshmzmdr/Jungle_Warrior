@@ -1,103 +1,96 @@
 #include <iostream>
+#include <vector>
+#include <chrono>
+#include <thread>
+#include <cstdlib>
 #include <ctime>
-#include <unistd.h>
 
 class Animal{
     public:
+        std::string name;
         int count=25;
         int fate=-1;
-    void setCount(int fate){
-        if(fate==0)
-            this->count=this->count-5;
-        else if(fate==1)
-            this->count=this->count+5;
-    }
+
+        Animal(std::string name) : name(name) {}
+
+        void applyFate(){
+            if(fate==0)
+                count-=5;
+            else if(fate==1)
+                count+=5;
+            fate=-1;
+        }
 };
 
 std::string winner;
 
+bool beats(int i, int j){
+    return (j - i + 3) % 3 == 1;    // Animal i beats Animal j when j is the next species after i
+}
+
+int indexOf(Animal* target, Animal* animals[], int total){
+    for(int i=0;i<total;i++)
+        if(animals[i]==target)
+            return i;
+    return -1;
+}
+
 void game(){
-    std::cout << "";
-    Animal wildBull;
-    Animal mongoose;
-    Animal snake;
-    Animal* arr[]={&wildBull,&mongoose,&snake};
-    int arrSize=sizeof(arr)/sizeof(Animal);
+    Animal wildBull("Wild Bulls");
+    Animal mongoose("Mongooses");
+    Animal snake("Snakes");
+    Animal* animals[]={&wildBull,&mongoose,&snake};
+    const int total=3;
+
     srand(time(0));
-    int faceOff1=0;
-    int faceOff2=0;
-    int i=0;
+
     while(true){
         std::cout << "\nWild Bulls : "<< wildBull.count;
         std::cout << "\nMongooses : "<< mongoose.count;
         std::cout << "\nSnakes : "<< snake.count << "\n\n";
-        if((mongoose.count==0 && snake.count==0) || wildBull.count==100){
-            winner="Wild Bulls";
-            break;
-        }
-        if((wildBull.count==0 && snake.count==0) || mongoose.count==100){
-            winner="Mongooses";
-            break;
-        }
-        if((mongoose.count==0 && wildBull.count==0) || snake.count==100){
-            winner="Snakes";
-            break;
-        }
-        sleep(1);
-            wildBull.fate=-1;
-            mongoose.fate=-1;
-            snake.fate=-1;
-            if(arr[0]==0 || arr[1]==0 || arrSize==3){
-                if(mongoose.count==0){
-                    arr[2]=&mongoose;
-                    arr[1]=&snake;
-                    arrSize--;          
-                }
-                
-                else if(wildBull.count==0){
-                    arr[2]=&wildBull;
-                    arr[0]=&snake;
-                    arrSize--;                   
-                }
-                else if(snake.count==0){
-                    arrSize--;
-                }
+
+        for(int i=0;i<total;i++){
+            if(animals[i]->count>=100){
+                winner=animals[i]->name;
+                return;
             }
-            faceOff1=rand()%arrSize;
-            faceOff2=rand()%arrSize;
-            if(arr[faceOff1]==arr[faceOff2]){
-                arr[faceOff1]->fate=1;
-            }
-            else{
-                if(arr[faceOff1]==&wildBull && arr[faceOff2]==&mongoose){
-                    arr[faceOff2]->fate=0;
-                }
-                
-                else if(arr[faceOff1]==&wildBull && arr[faceOff2]==&snake){
-                    arr[faceOff1]->fate=0;
-                }
-                
-                else if(arr[faceOff1]==&mongoose && arr[faceOff2]==&snake){
-                    arr[faceOff2]->fate=0;
-                }
-                else if(arr[faceOff2]==&wildBull && arr[faceOff1]==&mongoose){
-                    arr[faceOff1]->fate=0;
-                }
-                
-                else if(arr[faceOff2]==&wildBull && arr[faceOff1]==&snake){
-                    arr[faceOff2]->fate=0;
-                }
-                
-                else if(arr[faceOff2]==&mongoose && arr[faceOff1]==&snake){
-                    arr[faceOff1]->fate=0;
-                }
-            }
-            mongoose.setCount(mongoose.fate);
-            wildBull.setCount(wildBull.fate);
-            snake.setCount(snake.fate);
+        }
+
+        std::vector<Animal*> alive;
+        for(int i=0;i<total;i++)
+            if(animals[i]->count>0)
+                alive.push_back(animals[i]);
+
+        if(alive.size()==1){
+            winner=alive[0]->name;
+            return;
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        int faceOff1=rand()%(int)alive.size();
+        int faceOff2=rand()%(int)alive.size();
+        Animal* first=alive[faceOff1];
+        Animal* second=alive[faceOff2];
+
+        if(first==second){
+            first->fate=1;
+        }
+        else{
+            int i1=indexOf(first, animals, total);
+            int i2=indexOf(second, animals, total);
+            if(beats(i1,i2))
+                second->fate=0;
+            else if(beats(i2,i1))
+                first->fate=0;
+        }
+
+        wildBull.applyFate();
+        mongoose.applyFate();
+        snake.applyFate();
     }
-    std::cout<< "Winner : "<<winner;
 }
+
 int main(){
     std::cout << "************************************************************************************************************************\n\n";
     std::cout << "Welcome to the Jungle !!\n\n\n";
@@ -115,7 +108,7 @@ int main(){
         default: user=""; std::cout << "I see you are vegetarian..........\n\n";
     }
     std::cout << "Starting population for each animal = 25\n\n";
-    
+
     game();
     if(user==winner){
         std::cout<<"\n\nYou won!!\n\n";
